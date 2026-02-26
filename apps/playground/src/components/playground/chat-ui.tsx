@@ -98,7 +98,11 @@ interface ChatUIProps {
 		| "2:3"
 		| "5:4"
 		| "4:5"
-		| "21:9";
+		| "21:9"
+		| "1:4"
+		| "4:1"
+		| "1:8"
+		| "8:1";
 	setImageAspectRatio: (
 		value:
 			| "auto"
@@ -111,7 +115,11 @@ interface ChatUIProps {
 			| "2:3"
 			| "5:4"
 			| "4:5"
-			| "21:9",
+			| "21:9"
+			| "1:4"
+			| "4:1"
+			| "1:8"
+			| "8:1",
 	) => void;
 	imageSize: string;
 	setImageSize: (value: string) => void;
@@ -423,9 +431,16 @@ export const ChatUI = ({
 		selectedModel.toLowerCase().includes("seedream") ||
 		selectedModel.toLowerCase().includes("bytedance/seedream");
 
+	// Gemini 3.1 Flash Image supports 0.5K, 1K (default), 2K, 4K
+	const isGemini31FlashImage = selectedModel
+		.toLowerCase()
+		.includes("gemini-3.1-flash-image");
+
 	const availableSizes = isSeedream
 		? (["2K", "4K"] as const)
-		: (["1K", "2K", "4K"] as const);
+		: isGemini31FlashImage
+			? (["0.5K", "1K", "2K", "4K"] as const)
+			: (["1K", "2K", "4K"] as const);
 
 	const [activeGroup, setActiveGroup] =
 		useState<keyof typeof heroSuggestionGroups>("Create");
@@ -704,7 +719,11 @@ export const ChatUI = ({
 													| "2:3"
 													| "5:4"
 													| "4:5"
-													| "21:9",
+													| "21:9"
+													| "1:4"
+													| "4:1"
+													| "1:8"
+													| "8:1",
 											)
 										}
 									>
@@ -723,6 +742,10 @@ export const ChatUI = ({
 											<SelectItem value="5:4">5:4</SelectItem>
 											<SelectItem value="4:5">4:5</SelectItem>
 											<SelectItem value="21:9">21:9</SelectItem>
+											<SelectItem value="1:4">1:4</SelectItem>
+											<SelectItem value="4:1">4:1</SelectItem>
+											<SelectItem value="1:8">1:8</SelectItem>
+											<SelectItem value="8:1">8:1</SelectItem>
 										</SelectContent>
 									</Select>
 									<Select value={imageSize} onValueChange={setImageSize}>

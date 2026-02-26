@@ -113,6 +113,10 @@ export default function ChatPageClient({
 		| "5:4"
 		| "4:5"
 		| "21:9"
+		| "1:4"
+		| "4:1"
+		| "1:8"
+		| "8:1"
 	>("auto");
 	const [imageSize, setImageSize] = useState<string>("1K");
 	const [alibabaImageSize, setAlibabaImageSize] = useState<string>("1024x1024");
@@ -819,13 +823,19 @@ export default function ChatPageClient({
 		}
 	}, [supportsReasoning, reasoningEffort]);
 
-	// Reset image size when switching to a seedream model (only supports 2K/4K)
+	// Reset image size when switching models with different supported sizes
 	useEffect(() => {
 		const isSeedream =
 			selectedModel.toLowerCase().includes("seedream") ||
 			selectedModel.toLowerCase().includes("bytedance/seedream");
-		if (isSeedream && imageSize === "1K") {
+		const isGemini31FlashImage = selectedModel
+			.toLowerCase()
+			.includes("gemini-3.1-flash-image");
+		if (isSeedream && (imageSize === "1K" || imageSize === "0.5K")) {
 			setImageSize("2K");
+		}
+		if (!isGemini31FlashImage && imageSize === "0.5K") {
+			setImageSize("1K");
 		}
 	}, [selectedModel, imageSize]);
 
@@ -1150,6 +1160,10 @@ function ExtraChatPanel({
 		| "5:4"
 		| "4:5"
 		| "21:9"
+		| "1:4"
+		| "4:1"
+		| "1:8"
+		| "8:1"
 	>("auto");
 	const [imageSize, setImageSize] = useState<string>("1K");
 	const [alibabaImageSize, setAlibabaImageSize] = useState<string>("1024x1024");
