@@ -74,6 +74,10 @@ export type ProviderStats = ProvidersListResponse["providers"][number];
 export type ModelsListResponse = GetJsonResponse<"/admin/models">;
 export type ModelStats = ModelsListResponse["models"][number];
 
+// Model detail
+export type ModelDetailResponse = GetJsonResponse<"/admin/models/{modelId}">;
+export type ModelProviderStats = ModelDetailResponse["providers"][number];
+
 // History
 export type HistoryResponse =
 	GetJsonResponse<"/admin/providers/{providerId}/history">;

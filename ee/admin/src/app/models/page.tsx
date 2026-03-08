@@ -1,17 +1,22 @@
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import { ModelsTable } from "@/components/models-table";
+import { TimeRangePicker } from "@/components/time-range-picker";
 import { Button } from "@/components/ui/button";
 import { createServerApiClient } from "@/lib/server-api";
 
 import type { paths } from "@/lib/api/v1";
+import type { TimeseriesRange } from "@/lib/types";
 
 type ModelSortBy = NonNullable<
 	paths["/admin/models"]["get"]["parameters"]["query"]
 >["sortBy"];
 type SortOrder = "asc" | "desc";
+
+const validRanges = new Set(["7d", "30d", "90d", "365d", "all"]);
 
 function SignInPrompt() {
 	return (
@@ -41,6 +46,7 @@ export default async function ModelsPage({
 		search?: string;
 		sortBy?: string;
 		sortOrder?: string;
+		range?: string;
 	}>;
 }) {
 	const params = await searchParams;
@@ -48,6 +54,10 @@ export default async function ModelsPage({
 	const search = params?.search ?? "";
 	const sortBy = (params?.sortBy as ModelSortBy) ?? "logsCount";
 	const sortOrder = (params?.sortOrder as SortOrder) || "desc";
+	const rangeParam = typeof params?.range === "string" ? params.range : "all";
+	const range: TimeseriesRange = validRanges.has(rangeParam)
+		? (rangeParam as TimeseriesRange)
+		: "all";
 	const limit = 50;
 	const offset = (page - 1) * limit;
 
@@ -61,45 +71,55 @@ export default async function ModelsPage({
 	}
 
 	const totalPages = Math.ceil(data.total / limit);
+	const rangeParam2 = range !== "all" ? `&range=${range}` : "";
 
 	async function handleSearch(formData: FormData) {
 		"use server";
 		const searchValue = formData.get("search") as string;
 		const sortByValue = formData.get("sortBy") as string;
 		const sortOrderValue = formData.get("sortOrder") as string;
+		const rangeValue = formData.get("range") as string;
 		const searchParam = searchValue
 			? `&search=${encodeURIComponent(searchValue)}`
 			: "";
 		const sortParam = `&sortBy=${sortByValue}&sortOrder=${sortOrderValue}`;
-		redirect(`/models?page=1${searchParam}${sortParam}`);
+		const rangePart =
+			rangeValue && rangeValue !== "all" ? `&range=${rangeValue}` : "";
+		redirect(`/models?page=1${searchParam}${sortParam}${rangePart}`);
 	}
 
 	return (
-		<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 md:px-8 overflow-hidden">
+		<div className="mx-auto flex w-full max-w-[1920px] flex-col gap-6 px-4 py-8 md:px-8 overflow-hidden">
 			<header className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
 				<div>
 					<h1 className="text-3xl font-semibold tracking-tight">Models</h1>
 					<p className="mt-1 text-sm text-muted-foreground">
-						{data.total} models found — click a row to view history
+						{data.total} models found — click a row to view details
 					</p>
 				</div>
-				<form action={handleSearch} className="flex items-center gap-2">
-					<input type="hidden" name="sortBy" value={sortBy} />
-					<input type="hidden" name="sortOrder" value={sortOrder} />
-					<div className="relative">
-						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-						<input
-							type="text"
-							name="search"
-							placeholder="Search by name or ID..."
-							defaultValue={search}
-							className="h-9 w-64 rounded-md border border-border bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-						/>
-					</div>
-					<Button type="submit" size="sm">
-						Search
-					</Button>
-				</form>
+				<div className="flex items-center gap-3">
+					<form action={handleSearch} className="flex items-center gap-2">
+						<input type="hidden" name="sortBy" value={sortBy} />
+						<input type="hidden" name="sortOrder" value={sortOrder} />
+						<input type="hidden" name="range" value={range} />
+						<div className="relative">
+							<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<input
+								type="text"
+								name="search"
+								placeholder="Search by name or ID..."
+								defaultValue={search}
+								className="h-9 w-64 rounded-md border border-border bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+							/>
+						</div>
+						<Button type="submit" size="sm">
+							Search
+						</Button>
+					</form>
+					<Suspense>
+						<TimeRangePicker value={range} />
+					</Suspense>
+				</div>
 			</header>
 
 			<div className="min-w-0 overflow-x-auto rounded-lg border border-border/60 bg-card">
@@ -108,6 +128,7 @@ export default async function ModelsPage({
 					sortBy={sortBy}
 					sortOrder={sortOrder}
 					search={search}
+					range={range}
 				/>
 			</div>
 
@@ -120,7 +141,7 @@ export default async function ModelsPage({
 					<div className="flex items-center gap-2">
 						<Button variant="outline" size="sm" asChild disabled={page <= 1}>
 							<Link
-								href={`/models?page=${page - 1}${search ? `&search=${encodeURIComponent(search)}` : ""}&sortBy=${sortBy}&sortOrder=${sortOrder}`}
+								href={`/models?page=${page - 1}${search ? `&search=${encodeURIComponent(search)}` : ""}&sortBy=${sortBy}&sortOrder=${sortOrder}${rangeParam2}`}
 								className={page <= 1 ? "pointer-events-none opacity-50" : ""}
 							>
 								<ChevronLeft className="h-4 w-4" />
@@ -137,7 +158,7 @@ export default async function ModelsPage({
 							disabled={page >= totalPages}
 						>
 							<Link
-								href={`/models?page=${page + 1}${search ? `&search=${encodeURIComponent(search)}` : ""}&sortBy=${sortBy}&sortOrder=${sortOrder}`}
+								href={`/models?page=${page + 1}${search ? `&search=${encodeURIComponent(search)}` : ""}&sortBy=${sortBy}&sortOrder=${sortOrder}${rangeParam2}`}
 								className={
 									page >= totalPages ? "pointer-events-none opacity-50" : ""
 								}

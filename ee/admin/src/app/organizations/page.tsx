@@ -186,7 +186,7 @@ export default async function OrganizationsPage({
 	}
 
 	return (
-		<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 md:px-8">
+		<div className="mx-auto flex w-full max-w-[1920px] flex-col gap-6 px-4 py-8 md:px-8">
 			<header className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
 				<div>
 					<h1 className="text-3xl font-semibold tracking-tight">

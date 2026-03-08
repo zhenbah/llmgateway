@@ -19,7 +19,7 @@ import { getModelHistory } from "@/lib/admin-history";
 import { cn } from "@/lib/utils";
 
 import type { HistoryWindow } from "@/components/history-chart";
-import type { ModelStats } from "@/lib/types";
+import type { ModelStats, TimeseriesRange } from "@/lib/types";
 
 type ModelSortBy =
 	| "name"
@@ -41,18 +41,21 @@ function SortableHeader({
 	currentSortBy,
 	currentSortOrder,
 	search,
+	range,
 }: {
 	label: string;
 	sortKey: ModelSortBy;
 	currentSortBy: ModelSortBy;
 	currentSortOrder: SortOrder;
 	search: string;
+	range: TimeseriesRange;
 }) {
 	const isActive = currentSortBy === sortKey;
 	const nextOrder = isActive && currentSortOrder === "asc" ? "desc" : "asc";
 
 	const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
-	const href = `/models?page=1&sortBy=${sortKey}&sortOrder=${nextOrder}${searchParam}`;
+	const rangeParam = range !== "all" ? `&range=${range}` : "";
+	const href = `/models?page=1&sortBy=${sortKey}&sortOrder=${nextOrder}${searchParam}${rangeParam}`;
 
 	return (
 		<Link
@@ -111,12 +114,18 @@ function ModelRow({ model }: { model: ModelStats }) {
 				onClick={() => setExpanded(!expanded)}
 			>
 				<TableCell>
-					<span className="font-medium">
-						{model.name !== model.id ? model.name : model.id}
-					</span>
-					{model.name !== model.id && (
-						<p className="text-xs text-muted-foreground">{model.id}</p>
-					)}
+					<Link
+						href={`/models/${encodeURIComponent(model.id)}`}
+						className="hover:underline"
+						onClick={(e) => e.stopPropagation()}
+					>
+						<span className="font-medium">
+							{model.name !== model.id ? model.name : model.id}
+						</span>
+						{model.name !== model.id && (
+							<p className="text-xs text-muted-foreground">{model.id}</p>
+						)}
+					</Link>
 				</TableCell>
 				<TableCell>
 					<Badge variant="outline">{model.family}</Badge>
@@ -153,17 +162,32 @@ function ModelRow({ model }: { model: ModelStats }) {
 					{formatDate(model.updatedAt)}
 				</TableCell>
 				<TableCell>
-					<Button
-						variant="ghost"
-						size="sm"
-						className="h-7 px-2 text-xs"
-						onClick={(e) => {
-							e.stopPropagation();
-							setExpanded(!expanded);
-						}}
-					>
-						{expanded ? "Hide" : "History"}
-					</Button>
+					<div className="flex items-center gap-1">
+						<Button
+							variant="ghost"
+							size="sm"
+							className="h-7 px-2 text-xs"
+							onClick={(e) => {
+								e.stopPropagation();
+								setExpanded(!expanded);
+							}}
+						>
+							{expanded ? "Hide" : "History"}
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							className="h-7 px-2 text-xs"
+							asChild
+						>
+							<Link
+								href={`/models/${encodeURIComponent(model.id)}`}
+								onClick={(e) => e.stopPropagation()}
+							>
+								Details
+							</Link>
+						</Button>
+					</div>
 				</TableCell>
 			</TableRow>
 			{expanded && (
@@ -186,11 +210,13 @@ export function ModelsTable({
 	sortBy = "logsCount",
 	sortOrder = "desc",
 	search = "",
+	range = "all",
 }: {
 	models: ModelStats[];
 	sortBy?: ModelSortBy;
 	sortOrder?: SortOrder;
 	search?: string;
+	range?: TimeseriesRange;
 }) {
 	const sh = (label: string, sortKey: ModelSortBy) => (
 		<TableHead>
@@ -200,6 +226,7 @@ export function ModelsTable({
 				currentSortBy={sortBy}
 				currentSortOrder={sortOrder}
 				search={search}
+				range={range}
 			/>
 		</TableHead>
 	);

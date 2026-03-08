@@ -129,7 +129,7 @@ export default async function OrganizationDiscountsPage({
 	}
 
 	return (
-		<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 md:px-8">
+		<div className="mx-auto flex w-full max-w-[1920px] flex-col gap-6 px-4 py-8 md:px-8">
 			<div className="flex items-center gap-2">
 				<Button variant="ghost" size="sm" asChild>
 					<Link href={`/organizations/${orgId}`}>

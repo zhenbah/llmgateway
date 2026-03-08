@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { getProviderIcon } from "@llmgateway/shared";
 
 import type { HistoryWindow } from "@/components/history-chart";
-import type { ProviderStats } from "@/lib/types";
+import type { ProviderStats, TimeseriesRange } from "@/lib/types";
 
 type ProviderSortBy =
 	| "name"
@@ -40,16 +40,19 @@ function SortableHeader({
 	sortKey,
 	currentSortBy,
 	currentSortOrder,
+	range,
 }: {
 	label: string;
 	sortKey: ProviderSortBy;
 	currentSortBy: ProviderSortBy;
 	currentSortOrder: SortOrder;
+	range: TimeseriesRange;
 }) {
 	const isActive = currentSortBy === sortKey;
 	const nextOrder = isActive && currentSortOrder === "asc" ? "desc" : "asc";
 
-	const href = `/providers?sortBy=${sortKey}&sortOrder=${nextOrder}`;
+	const rangeParam = range !== "all" ? `&range=${range}` : "";
+	const href = `/providers?sortBy=${sortKey}&sortOrder=${nextOrder}${rangeParam}`;
 
 	return (
 		<Link
@@ -177,10 +180,12 @@ export function ProvidersTable({
 	providers,
 	sortBy = "logsCount",
 	sortOrder = "desc",
+	range = "all",
 }: {
 	providers: ProviderStats[];
 	sortBy?: ProviderSortBy;
 	sortOrder?: SortOrder;
+	range?: TimeseriesRange;
 }) {
 	const sh = (label: string, sortKey: ProviderSortBy) => (
 		<TableHead>
@@ -189,6 +194,7 @@ export function ProvidersTable({
 				sortKey={sortKey}
 				currentSortBy={sortBy}
 				currentSortOrder={sortOrder}
+				range={range}
 			/>
 		</TableHead>
 	);

@@ -2561,6 +2561,113 @@ admin.openapi(getModelStats, async (c) => {
 	});
 });
 
+// Model detail – lists providers that serve a given model (with stats)
+const modelProviderStatsSchema = z.object({
+	providerId: z.string(),
+	providerName: z.string(),
+	logsCount: z.number(),
+	errorsCount: z.number(),
+	cachedCount: z.number(),
+	avgTimeToFirstToken: z.number().nullable(),
+	updatedAt: z.string(),
+});
+
+const modelDetailSchema = z.object({
+	model: z.object({
+		id: z.string(),
+		name: z.string(),
+		family: z.string(),
+		free: z.boolean(),
+		stability: z.string(),
+		status: z.string(),
+		logsCount: z.number(),
+		errorsCount: z.number(),
+		cachedCount: z.number(),
+		avgTimeToFirstToken: z.number().nullable(),
+		providerCount: z.number(),
+		updatedAt: z.string(),
+	}),
+	providers: z.array(modelProviderStatsSchema),
+});
+
+const getModelDetail = createRoute({
+	method: "get",
+	path: "/models/{modelId}",
+	request: {
+		params: z.object({ modelId: z.string() }),
+	},
+	responses: {
+		200: {
+			content: {
+				"application/json": { schema: modelDetailSchema.openapi({}) },
+			},
+			description: "Model detail with per-provider stats.",
+		},
+	},
+});
+
+admin.openapi(getModelDetail, async (c) => {
+	const { modelId } = c.req.valid("param");
+
+	const model = await db.query.model.findFirst({
+		where: { id: { eq: modelId } },
+	});
+
+	if (!model) {
+		throw new HTTPException(404, { message: "Model not found" });
+	}
+
+	const mappings = await db
+		.select({
+			providerId: tables.modelProviderMapping.providerId,
+			logsCount: tables.modelProviderMapping.logsCount,
+			errorsCount: tables.modelProviderMapping.errorsCount,
+			cachedCount: tables.modelProviderMapping.cachedCount,
+			avgTimeToFirstToken: tables.modelProviderMapping.avgTimeToFirstToken,
+			updatedAt: tables.modelProviderMapping.updatedAt,
+		})
+		.from(tables.modelProviderMapping)
+		.where(eq(tables.modelProviderMapping.modelId, modelId));
+
+	const providerIds = mappings.map((m) => m.providerId);
+	const providerRows =
+		providerIds.length > 0
+			? await db.query.provider.findMany({
+					where: { id: { in: providerIds } },
+				})
+			: [];
+
+	const providerNameMap = new Map(providerRows.map((p) => [p.id, p.name]));
+
+	const providerStats = mappings.map((m) => ({
+		providerId: m.providerId,
+		providerName: providerNameMap.get(m.providerId) ?? m.providerId,
+		logsCount: m.logsCount,
+		errorsCount: m.errorsCount,
+		cachedCount: m.cachedCount,
+		avgTimeToFirstToken: m.avgTimeToFirstToken,
+		updatedAt: m.updatedAt.toISOString(),
+	}));
+
+	return c.json({
+		model: {
+			id: model.id,
+			name: model.name,
+			family: model.family,
+			free: model.free,
+			stability: model.stability,
+			status: model.status,
+			logsCount: model.logsCount,
+			errorsCount: model.errorsCount,
+			cachedCount: model.cachedCount,
+			avgTimeToFirstToken: model.avgTimeToFirstToken,
+			providerCount: providerStats.length,
+			updatedAt: model.updatedAt.toISOString(),
+		},
+		providers: providerStats,
+	});
+});
+
 // Gift credits to organization
 const giftCreditsRoute = createRoute({
 	method: "post",

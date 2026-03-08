@@ -48,6 +48,14 @@ export async function getMappingHistory(
 	return data?.data ?? null;
 }
 
+export async function getModelDetail(modelId: string) {
+	const $api = await createServerApiClient();
+	const { data } = await $api.GET("/admin/models/{modelId}", {
+		params: { path: { modelId: encodeURIComponent(modelId) } },
+	});
+	return data ?? null;
+}
+
 export async function getGlobalCostByModel(window: TokenWindow) {
 	const $api = await createServerApiClient();
 	const { data } = await $api.GET("/admin/metrics/cost-by-model", {
